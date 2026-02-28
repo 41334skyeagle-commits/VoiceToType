@@ -50,36 +50,113 @@ VoiceToType/
 
 ---
 
-## Windows 安裝步驟
+## Windows 安裝步驟（PowerShell）
 
-> 以下以 Windows PowerShell 為例。
+### 0️⃣ 前置條件
 
-1. 下載專案
-   ```powershell
-   git clone <your-repo-url>
-   cd VoiceToType
-   ```
+- Windows 10 或更新版本
+- 網路正常
+- 已安裝 Git
+- 已安裝 Python 3.10+（安裝時請勾選 **Add Python to PATH**）
 
-2. 建立虛擬環境
-   ```powershell
-   py -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
+### 1️⃣ 下載專案
 
-3. 安裝 Python 套件
-   ```powershell
-   pip install -r requirements.txt
-   ```
+打開 PowerShell（普通使用者即可），切換到你要存放專案的資料夾：
 
-4. 安裝 FFmpeg（Whisper 需要）
-   - 建議使用 Chocolatey：
-   ```powershell
-   choco install ffmpeg -y
-   ```
-   - 安裝後確認：
-   ```powershell
-   ffmpeg -version
-   ```
+```powershell
+cd C:\Users\<你的使用者名稱>
+```
+
+克隆專案並進入目錄：
+
+```powershell
+git clone https://github.com/41334skyeagle-commits/VoiceToType.git
+cd VoiceToType
+```
+
+⚠️ 注意：不要在 URL 外面加 `< >`。
+
+### 2️⃣ 建立 Python 虛擬環境
+
+先確認 Python 可用：
+
+```powershell
+python --version
+# 或
+py --version
+```
+
+建立虛擬環境：
+
+```powershell
+py -m venv .venv
+```
+
+啟動虛擬環境：
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+⚠️ 如果遇到權限問題，先執行：
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force
+```
+
+再重新執行啟動命令。成功後，PowerShell 提示符前面會出現 `(.venv)`。
+
+### 3️⃣ 安裝 Python 套件
+
+在虛擬環境啟動狀態下執行：
+
+```powershell
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+⚠️ 請確認是在 `.venv` 內執行，避免污染系統 Python。
+
+### 4️⃣ 安裝 FFmpeg（Whisper 需要）
+
+#### 4-1️⃣ 安裝 Chocolatey
+
+請使用「系統管理員權限」開啟 PowerShell，執行：
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = `
+    [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```
+
+安裝完成後，請關閉 PowerShell，再重新以管理員開啟。
+
+⚠️ 若顯示 `An existing Chocolatey installation was detected`，代表已安裝，可直接用現有版本。
+
+#### 4-2️⃣ 安裝 FFmpeg
+
+```powershell
+choco install ffmpeg -y
+```
+
+確認安裝：
+
+```powershell
+ffmpeg -version
+```
+
+看到版本號即表示安裝成功。
+
+### 5️⃣ 確認環境並執行專案
+
+請確認以下項目都已完成：
+
+- 虛擬環境啟動中
+- Python 套件已安裝
+- FFmpeg 安裝成功
+
+完成後即可依下方說明啟動程式。
 
 ---
 
