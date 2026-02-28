@@ -1,0 +1,37 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Whisper model cache
+.whisper/
+.cache/whisper/
+
+# ffmpeg and temp audio files
+*.tmp.wav
+*.temp.wav
+ffmpeg2pass-0.log
+ffmpeg2pass-0.log.mbtree
+
+# IDE
+.vscode/
+.idea/
+
+# Build artifacts
+build/
+dist/
+*.spec
+!VoiceToType.spec
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Optional: ignore downloaded local model checkpoints
+whisper_model/*.pt
+!whisper_model/.gitkeep
