@@ -7,19 +7,17 @@ VoiceToType 是使用 **Python + Tkinter** 開發的 Windows 桌面工具。
 
 ## 新功能（本次更新）
 
+- **EXE 穩定運行補強（Whisper + FFmpeg）**
+  - 新增 `runtime_patch.py`，啟動時自動處理 `_MEIPASS` / 一般執行路徑
+  - 啟動時自動把 `imageio_ffmpeg` 的 ffmpeg binary 目錄加入 `PATH`
+  - 支援從專案內 `whisper_model/` 載入 `base` 模型
+  - 提供 `VoiceToType.spec`，打包時一併收集 whisper/torch/numpy/imageio_ffmpeg 資源
 - **歷史紀錄管理**
   - 每筆歷史旁都有「刪除」按鈕
-  - 支援「清空歷史」按鈕
-  - 清空前會跳出確認對話框
-  - 刪除完成後會顯示提示訊息
+  - 支援「清空歷史」按鈕（含確認對話框）
 - **快速開啟工具**
-  - 新增全域熱鍵：`Ctrl + Alt + W`
-  - 可喚醒已在背景/最小化的視窗
-- **單一執行實例**
-  - 程式啟動時會檢查是否已在執行
-  - 若已執行，新的啟動會改為喚醒既有視窗
-- **啟動後預設最小化**
-  - 開啟程式後會最小化到工作列（非 System Tray）
+  - 全域喚醒熱鍵：`Ctrl + Alt + W`
+  - 單一執行實例：重複啟動時喚醒既有視窗
 
 ---
 
@@ -38,6 +36,10 @@ VoiceToType 是使用 **Python + Tkinter** 開發的 Windows 桌面工具。
 ```text
 VoiceToType/
 ├─ main.py
+├─ runtime_patch.py
+├─ VoiceToType.spec
+├─ whisper_model/
+│  └─ .gitkeep
 ├─ audio/
 │  ├─ __init__.py
 │  └─ recorder.py
@@ -60,79 +62,83 @@ VoiceToType/
 
 ---
 
-## 依賴安裝指令
+## 安裝依賴
 
 ```powershell
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-
-> `requirements.txt` 內已包含 `pynput`，用於錄音熱鍵與視窗喚醒熱鍵。
 
 ---
 
-## Windows 安裝與執行（PowerShell）
+## 準備本機 Whisper 模型（重要）
 
-### 0️⃣ 前置條件
+### 模型放置位置
 
-- Windows 10 或更新版本
-- 網路正常
-- 已安裝 Git
-- 已安裝 Python 3.10+（安裝時勾選 **Add Python to PATH**）
+- 請將模型放在專案根目錄：`whisper_model/`
+- `base` 模型檔案應為：`whisper_model/base.pt`
 
-### 1️⃣ 下載專案
+### 下載 `base` 模型到專案資料夾
 
 ```powershell
-cd C:\Users\<你的使用者名稱>
-git clone https://github.com/41334skyeagle-commits/VoiceToType.git
-cd VoiceToType
+python -c "import whisper; whisper.load_model('base', download_root='whisper_model')"
 ```
 
-### 2️⃣ 建立並啟動虛擬環境
+> 建議在打包前先執行一次，確認模型已就位，讓 EXE 可離線使用。
 
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
+---
 
-若遇到權限問題：
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-```
-
-### 3️⃣ 安裝 Python 套件
-
-```powershell
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-### 4️⃣ 安裝 FFmpeg（Whisper 需要）
-
-先安裝 Chocolatey（管理員 PowerShell）：
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-[System.Net.ServicePointManager]::SecurityProtocol = `
-    [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-```
-
-再安裝 FFmpeg：
-
-```powershell
-choco install ffmpeg -y
-ffmpeg -version
-```
-
-### 5️⃣ 啟動程式
+## Windows 本機執行
 
 ```powershell
 python main.py
 ```
 
-> 首次執行 Whisper 會下載 `base` 模型，請稍候。
+- 程式啟動時會先套用 runtime patch（PATH / `_MEIPASS` / whisper_model）
+- 如果模型不在 `whisper_model/`，Whisper 可能嘗試下載（需網路）
+
+---
+
+## 重新打包成 EXE（完整步驟）
+
+### 1) 安裝 PyInstaller
+
+```powershell
+pip install pyinstaller
+```
+
+### 2) 確認模型已在 whisper_model/
+
+```powershell
+dir .\whisper_model
+```
+
+需看到 `base.pt`。
+
+### 3) 使用自訂 spec 打包
+
+```powershell
+pyinstaller --noconfirm VoiceToType.spec
+```
+
+### 4) 產物位置
+
+- `dist/VoiceToType/VoiceToType.exe`
+
+### 5) 執行 EXE
+
+```powershell
+.\dist\VoiceToType\VoiceToType.exe
+```
+
+---
+
+## 為什麼這版 EXE 比較穩定
+
+1. `runtime_patch.py` 會在啟動時處理 EXE 臨時目錄 `_MEIPASS`。  
+2. 啟動時自動把 `imageio_ffmpeg` 提供的 ffmpeg 路徑加進 `PATH`。  
+3. 模型目錄固定在 `whisper_model/`，打包時透過 `.spec` 一起帶入。  
+4. `VoiceToType.spec` 透過 `collect_all` 打包 `whisper` / `torch` / `numpy` / `imageio_ffmpeg` 必要資源。  
 
 ---
 
@@ -142,27 +148,17 @@ python main.py
   - 第一次按下：開始錄音
   - 第二次按下：停止錄音並開始處理
 - **喚醒視窗熱鍵（固定）**：`Ctrl + Alt + W`
-  - 用途：快速把程式視窗帶到前景
 
 ---
 
-## 歷史管理操作方式
+## 測試流程（建議）
 
-1. 在「歷史紀錄」區塊中，每筆文字右側有「刪除」按鈕。  
-2. 點擊「刪除」後，該筆紀錄會被移除，並顯示提示。  
-3. 點擊「清空歷史」可刪除全部紀錄。  
-4. 清空前會出現確認對話框，避免誤刪。  
-
----
-
-## 打包為 EXE（PyInstaller）
-
-```powershell
-pip install pyinstaller
-pyinstaller --noconfirm --windowed --name VoiceToType main.py
-```
-
-執行檔位置：`dist/VoiceToType/VoiceToType.exe`
+1. 啟動 `python main.py`。  
+2. 按 `Right Alt` 開始錄音，再按一次停止。  
+3. 確認可得到文字、複製到剪貼簿、歷史可新增。  
+4. 打包後執行 `dist/VoiceToType/VoiceToType.exe`。  
+5. 重複第 2~3 步，確認 EXE 仍可正常轉寫（不依賴外部 ffmpeg 路徑）。  
+6. 關閉視窗後重新啟動 EXE，測試 `Ctrl + Alt + W` 喚醒。  
 
 ---
 

@@ -26,7 +26,12 @@ ffmpeg2pass-0.log.mbtree
 build/
 dist/
 *.spec
+!VoiceToType.spec
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Optional: ignore downloaded local model checkpoints
+whisper_model/*.pt
+!whisper_model/.gitkeep
