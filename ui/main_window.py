@@ -11,7 +11,8 @@ from audio.recorder import AudioRecorder, AudioRecorderError
 from services.clipboard_service import ClipboardService
 from services.history_service import HistoryService
 from services.hotkey_manager import HotkeyError, HotkeyManager
-from services.openai_service import OpenAIService, OpenAIServiceError
+from services.local_transcriber import LocalTranscriberError, transcribe
+from services.text_cleaner import clean_text
 
 
 class AppStatus(str, Enum):
@@ -35,13 +36,6 @@ class VoiceToTypeApp:
 
         self.recorder = AudioRecorder()
         self.history_service = HistoryService()
-
-        try:
-            self.openai_service = OpenAIService()
-        except OpenAIServiceError as exc:
-            self.openai_service = None
-            self.status_var.set(AppStatus.ERROR.value)
-            messagebox.showerror("API Key 設定錯誤", str(exc))
 
         self.hotkey_manager = HotkeyManager(on_toggle=self.on_hotkey_toggle)
         self.hotkey_manager.start()
@@ -132,17 +126,13 @@ class VoiceToTypeApp:
 
     def _process_audio_worker(self, audio_path: Path) -> None:
         try:
-            if not self.openai_service:
-                raise OpenAIServiceError("OpenAI service is not initialized.")
-
-            raw_text = self.openai_service.transcribe_audio(audio_path)
-            polished_text = self.openai_service.polish_text(raw_text)
+            raw_text = transcribe(audio_path)
+            polished_text = clean_text(raw_text)
             ClipboardService.copy_text(polished_text)
             self.history_service.add_entry(polished_text)
-
             self.root.after(0, lambda: self._update_result(polished_text, AppStatus.DONE))
-        except OpenAIServiceError as exc:
-            self.root.after(0, lambda: self._show_processing_error(f"API 呼叫失敗：{exc}"))
+        except LocalTranscriberError as exc:
+            self.root.after(0, lambda: self._show_processing_error(f"本機語音辨識失敗：{exc}"))
         except Exception as exc:  # pragma: no cover - broad fallback for runtime safety
             self.root.after(0, lambda: self._show_processing_error(f"處理失敗：{exc}"))
         finally:

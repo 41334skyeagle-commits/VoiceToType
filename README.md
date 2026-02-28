@@ -1,13 +1,15 @@
-# VoiceToType（Windows 桌面語音轉文字工具）
+# VoiceToType（Windows 本機語音轉文字工具）
 
-VoiceToType 是一個使用 **Python + Tkinter** 開發的輕量 Windows 桌面工具。  
-透過全域快捷鍵即可開始/停止錄音，並自動完成：
+VoiceToType 是使用 **Python + Tkinter** 開發的輕量 Windows 桌面工具。  
+透過全域快捷鍵即可開始/停止錄音，並在本機完成：
 
 1. 錄音（WAV / 16kHz / Mono）
-2. Whisper API 語音轉文字（`whisper-1`）
-3. GPT 文本優化（`gpt-4o-mini`）
+2. 本機 Whisper（`base`）語音轉文字
+3. 本機規則式文本清理
 4. 自動複製到剪貼簿
 5. 顯示在視窗並儲存歷史
+
+> 本版本不使用 OpenAI 雲端 API，也不需要 API Key。
 
 ---
 
@@ -18,7 +20,7 @@ VoiceToType 是一個使用 **Python + Tkinter** 開發的輕量 Windows 桌面�
 - 預設全域快捷鍵：`Right Alt`
 - 快捷鍵可在 UI 中修改
 - 狀態顯示：待機 / 錄音中 / 處理中 / 完成 / 錯誤
-- 支援常見錯誤提示（API 失敗、麥克風問題、設定問題）
+- 適合一般筆電 CPU（Whisper `base` + `fp16=False`）
 
 ---
 
@@ -38,9 +40,9 @@ VoiceToType/
 │  ├─ clipboard_service.py
 │  ├─ history_service.py
 │  ├─ hotkey_manager.py
-│  └─ openai_service.py
+│  ├─ local_transcriber.py
+│  └─ text_cleaner.py
 ├─ requirements.txt
-├─ .env.example
 ├─ .gitignore
 ├─ LICENSE
 └─ README.md
@@ -48,9 +50,9 @@ VoiceToType/
 
 ---
 
-## 安裝步驟
+## Windows 安裝步驟
 
-> 以下步驟以 Windows PowerShell 為例。
+> 以下以 Windows PowerShell 為例。
 
 1. 下載專案
    ```powershell
@@ -64,26 +66,20 @@ VoiceToType/
    .\.venv\Scripts\Activate.ps1
    ```
 
-3. 安裝依賴
+3. 安裝 Python 套件
    ```powershell
    pip install -r requirements.txt
    ```
 
----
-
-## 環境變數設定
-
-1. 複製範例檔
+4. 安裝 FFmpeg（Whisper 需要）
+   - 建議使用 Chocolatey：
    ```powershell
-   copy .env.example .env
+   choco install ffmpeg -y
    ```
-
-2. 編輯 `.env`，填入你的 OpenAI API Key
-   ```env
-   OPENAI_API_KEY=你的金鑰
+   - 安裝後確認：
+   ```powershell
+   ffmpeg -version
    ```
-
-> 程式啟動時會自動讀取 `.env`。
 
 ---
 
@@ -92,6 +88,8 @@ VoiceToType/
 ```powershell
 python main.py
 ```
+
+第一次執行 Whisper 時會下載 `base` 模型，需稍候片刻。
 
 ---
 
@@ -122,36 +120,31 @@ python main.py
 3. 執行檔位置
    - `dist/VoiceToType/VoiceToType.exe`
 
-> 若需要一起帶入 `.env`，請將 `.env` 放在與 `.exe` 同層目錄，或改為系統環境變數。
+> 請確保執行環境仍可找到 `ffmpeg`。
 
 ---
 
 ## 常見問題排除
 
-### 1) 啟動後顯示 API Key 錯誤
-
-- 確認 `.env` 存在且有 `OPENAI_API_KEY`
-- 確認金鑰可用且未過期
-
-### 2) 無法開始錄音 / 找不到麥克風
+### 1) 無法開始錄音 / 找不到麥克風
 
 - 檢查 Windows 麥克風權限（設定 → 隱私權）
 - 確認有可用的錄音裝置
 - 重新插拔麥克風或改預設裝置
 
-### 3) 處理中失敗（網路/API）
+### 2) 轉寫失敗（Whisper 錯誤）
 
-- 檢查網路連線
-- 稍後重試
-- 檢查 OpenAI API 配額與服務狀態
+- 確認 `ffmpeg -version` 可正常輸出
+- 確認 `pip show openai-whisper torch` 可查到套件
+- 網路不穩時，首次模型下載可能失敗，重新執行一次
 
-### 4) 全域快捷鍵沒有反應
+### 3) 全域快捷鍵沒有反應
 
 - 嘗試改用 `f8` 或 `f9`
 - 避免與其他軟體快捷鍵衝突
 - 以一般使用者權限重新啟動程式
 
-### 5) 複製到剪貼簿失敗
+### 4) 複製到剪貼簿失敗
 
 - 關閉可能佔用剪貼簿的軟體後重試
 - 更新 `pyperclip`

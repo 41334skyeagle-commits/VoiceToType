@@ -8,8 +8,15 @@ __pycache__/
 venv/
 env/
 
-# Environment variables
-.env
+# Whisper model cache
+.whisper/
+.cache/whisper/
+
+# ffmpeg and temp audio files
+*.tmp.wav
+*.temp.wav
+ffmpeg2pass-0.log
+ffmpeg2pass-0.log.mbtree
 
 # IDE
 .vscode/
